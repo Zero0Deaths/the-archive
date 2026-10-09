@@ -6,7 +6,37 @@ module.exports = async function handler(req, res) {
   try {
     const {recent = [], liked = [], disliked = [], surprise = false} = req.body || {};
     const clean = v => Array.isArray(v) ? v.filter(x=>typeof x==='string').slice(0,30).map(x=>x.slice(0,120)) : [];
-    const prompt = `Write ONE fascinating, true, fact-checked story for an app called The Archive. Target a captivating 5-10 minute read (~700-950 words). Themes: unusual real events, ingenious schemes, science, survival, mysteries with verified outcomes, business, psychology. Avoid fabricated quotes and sensationalized claims. Use web search to verify the facts. Include 2-4 credible source URLs, favor primary and reputable sources. Do not repeat or closely resemble these recent stories: ${JSON.stringify(clean(recent))}. Topics user liked: ${JSON.stringify(clean(liked))}. Topics user disliked: ${JSON.stringify(clean(disliked))}. ${surprise?'Choose an unexpected topic very different from recent favorites.':''} Respond with ONLY valid JSON with keys title (string), category (string), hook (string, one sentence), story (string with paragraphs separated by \\n\\n), sources (array of objects {name,url}). If a fact cannot be verified, leave it out. Make the narrative vivid but factual.`;
+  
+const prompt = `You are the story researcher and writer for The Archive, an app that replaces doomscrolling with fascinating true stories.
+
+Generate ONE interesting, factual story that takes about 5–10 minutes to read.
+
+Choose from unusual true events, mysteries, clever scams, science, psychology, technology, survival, business, and surprising discoveries.
+
+Avoid repeating these recent stories: ${JSON.stringify(recent)}.
+User's favorite stories: ${JSON.stringify(liked)}.
+Stories the user disliked: ${JSON.stringify(disliked)}.
+Surprise mode: ${surprise}.
+
+WRITING RULES:
+- Start with a captivating hook.
+- Write an entertaining, easy-to-read story.
+- Use natural paragraphs.
+- Never include URLs, Markdown links, citations, or source references inside the story body.
+- Put all sources in the separate sources array.
+- Use reliable sources and never invent facts or URLs.
+
+Return ONLY valid JSON in this exact format:
+{
+  "title": "Story title",
+  "category": "Category",
+  "hook": "One captivating sentence",
+  "story": "The complete story in paragraphs",
+  "sources": [
+    {"title": "Source name", "url": "https://example.com"}
+  ]
+}
+`;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method:'POST', headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
       body:JSON.stringify({model:'gpt-4.1-mini',tools:[{type:'web_search_preview'}],input:prompt,max_output_tokens:2600})
